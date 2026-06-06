@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+**/node_modules
+**/bower_components
+
+# Python files
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/.venv
+**/venv
+**/env
+
+# Frontend builds
+**/dist
+**/build
+
+# Uploads and Database
+**/postgres_data
+**/backend/uploads
+
+# Docker files
+**/docker-compose*.yml
+Dockerfile
+Dockerfile.dev
+Dockerfile.prod
+README.md
+INSTALL.md
+.env
+.env.*
