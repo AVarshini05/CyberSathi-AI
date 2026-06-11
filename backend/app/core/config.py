@@ -32,14 +32,34 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    # Database setup
-    DATABASE_URL: str = "postgresql://postgres:postgrespassword@db:5432/ccrms"
+    # AI Services Keys
+    SARVAM_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+
+    # Database setup (local PostgreSQL)
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ccrms"
 
     # Local storage uploads
     UPLOAD_DIR: str = "uploads"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[
+            # Try root directory .env relative to this file (4 levels up: backend/app/core/config.py)
+            __import__("os").path.join(
+                __import__("os").path.dirname(
+                    __import__("os").path.dirname(
+                        __import__("os").path.dirname(
+                            __import__("os").path.dirname(
+                                __import__("os").path.abspath(__file__)
+                            )
+                        )
+                    )
+                ),
+                ".env"
+            ),
+            # Fallback to current working directory .env
+            ".env"
+        ],
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"

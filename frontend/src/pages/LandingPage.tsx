@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, ShieldAlert, FileText, Search, PhoneCall, TrendingUp, HelpCircle } from 'lucide-react';
+import { Shield, ShieldAlert, FileText, Search, PhoneCall, TrendingUp, HelpCircle, Sparkles } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 
 export const LandingPage: React.FC = () => {
@@ -30,6 +30,13 @@ export const LandingPage: React.FC = () => {
             >
               <ShieldAlert className="h-5 w-5" />
               <span>Report Cyber Crime</span>
+            </Link>
+            <Link
+              to="/file-complaint?ai=true"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-lg shadow-lg hover:shadow-indigo-600/10 transition-all text-sm flex items-center justify-center space-x-2"
+            >
+              <Sparkles className="h-5 w-5" />
+              <span>File Complaint with AI Officer</span>
             </Link>
             <Link
               to="/track"

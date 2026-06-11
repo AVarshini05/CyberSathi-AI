@@ -1,84 +1,99 @@
 # Cyber Crime Reporting Management System (CCRMS)
 
-A complete production-ready online reporting and investigation workflow system inspired by India's National Cyber Crime Reporting Portal (NCRP), built for educational and portfolio review.
+A production-grade cybercrime complaint portal inspired by India's NCRP, built for educational and portfolio purposes.
 
 ---
 
-## 🌟 Key Features
+## Features
 
-1. **Multi-step Incident Reporting**: Structured forms separated into categories (Financial Fraud, Other Cyber Crime, Women & Children Related Crime).
-2. **Dynamic Form Engine**: Subcategory-driven questionnaire rendering loaded dynamically from database schemas.
-3. **Anonymous Reporting**: Allowed for sensitive Women/Children safety categories, ensuring reporting names are omitted.
-4. **Complaint Acknowledgement System**: Automatically generates a unique, sequential acknowledgement number (e.g., `CCRMS-FF-2026-000001`).
-5. **Interactive Receipt Generation**: Automatic generation of downloadable PDF receipts containing a security verification QR code linking to the status page.
-6. **Timeline Complaint Tracking**: Search and visualize case progress (Submitted &rarr; Under Review &rarr; Assigned &rarr; Investigation &rarr; Closed).
-7. **Citizen Dashboard**: Access case histories, upload supplemental evidence files, and view officer feedback.
-8. **Suspect Repository Search**: Look up unknown numbers, emails, websites, or UPI IDs to assess risk levels (Safe, Medium, High).
-9. **Back-Office Officer Console**: Manage received reports, search by indicators, review evidence attachments, and update case statuses.
-
----
-
-## 🛠️ Technology Stack
-
-* **Frontend**: React + TypeScript + Tailwind CSS (bundled via Vite)
-* **Backend**: FastAPI (Python 3.11) + SQLAlchemy ORM + Uvicorn
-* **Database**: PostgreSQL (v15)
-* **Migrations**: Alembic
-* **Authentication**: JWT Bearer Tokens + Passlib Password Hashing
-* **Receipts & QR**: ReportLab PDF + python-qrcode
-* **Containerization**: Docker & Docker Compose
+- **Citizen Portal** — Register, login (OTP simulation), file complaints, track status
+- **Complaint Categories** — Financial fraud, women/child safety, other cybercrimes, anonymous reporting
+- **Dynamic Forms** — NCRP-style multi-step complaint filing with conditional fields
+- **Complaint Tracking** — Acknowledgement number lookup, status timeline, PDF receipts
+- **QR Code Verification** — QR codes on receipts for authenticity checks
+- **Admin Dashboard** — Manage officers, view analytics, audit trails
+- **Officer Dashboard** — Assigned cases, investigation workflow, status updates
+- **Suspect Repository** — Centralized suspect database with linking to complaints
+- **Activity Logs** — Full audit trail for accountability
+- **Notifications** — In-app notification system
 
 ---
 
-## 📂 Project Architecture
+## Tech Stack
 
-```
-ncrp-antigravity/
-├── backend/                  # FastAPI Application
-│   ├── app/
-│   │   ├── api/              # API Route dependencies & V1 endpoints
-│   │   ├── core/             # Configuration & Security (JWT, bcrypt)
-│   │   ├── crud/             # SQL query helper methods
-│   │   ├── db/               # Database engine, session, and seeds
-│   │   ├── models/           # SQLAlchemy Declarative Models
-│   │   ├── schemas/          # Pydantic schemas (validation layer)
-│   │   ├── services/         # PDF and QR generator helper service
-│   │   └── main.py           # App initialization & lifespan seeder
-│   ├── tests/                # pytest suite
-│   ├── alembic.ini           # Alembic settings
-│   ├── Dockerfile            # Container build instructions
-│   └── requirements.txt      # Python dependencies
-├── frontend/                 # React Application
-│   ├── public/               # Public assets
-│   ├── src/
-│   │   ├── components/       # Layout wrappers & dynamic form engines
-│   │   ├── context/          # React AuthContext (JWT + OTP simulation)
-│   │   ├── pages/            # Landing page, dashboard, login views
-│   │   ├── routes/           # AppRoutes and Protected routes
-│   │   └── services/         # Axios API interceptor configurations
-│   ├── Dockerfile            # Multi-stage containerizer
-│   ├── nginx.conf            # Production Nginx Router config
-│   ├── tailwind.config.js    # Customized theme theme styling
-│   └── vite.config.ts        # Bundler configuration
-├── docker-compose.yml        # Development Docker Compose file
-├── .gitignore                # Git ignore files
-└── INSTALL.md                # Quickstart guide
+| Layer     | Technology                        |
+|-----------|-----------------------------------|
+| Frontend  | React, TypeScript, Vite, Tailwind |
+| Backend   | FastAPI, SQLAlchemy, Alembic      |
+| Database  | PostgreSQL                        |
+| Auth      | JWT (JSON Web Tokens)             |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Python 3.10+** — [Download](https://www.python.org/downloads/)
+- **Node.js 18+** — [Download](https://nodejs.org/)
+- **PostgreSQL 14+** — [Download](https://www.postgresql.org/download/windows/)
+
+### 1. Create the Database
+
+```bash
+psql -U postgres -f setup_database.sql
 ```
 
+Or create a database named `ccrms` in pgAdmin.
+
+### 2. Configure Environment
+
+```bash
+copy .env.example .env
+```
+
+Edit `.env` if your PostgreSQL password differs from `postgres`.
+
+### 3. Launch
+
+**Windows — Double-click `start_all.bat`**
+
+Or manually:
+
+```bash
+# Terminal 1 — Backend
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000 --reload
+
+# Terminal 2 — Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+### 4. Open
+
+| Service  | URL                       |
+|----------|---------------------------|
+| Frontend | http://localhost:5173      |
+| API Docs | http://localhost:8000/docs |
+
+### Default Credentials
+
+| Role    | Email                  | Password        |
+|---------|------------------------|-----------------|
+| Admin   | admin@ccrms.gov.in     | adminpassword   |
+| Officer | officer@ccrms.gov.in   | officerpassword |
+
 ---
 
-## 🗄️ Database Schema Design
+## Full Documentation
 
-The application utilizes a PostgreSQL schema with fully defined relations:
+See [INSTALL_LOCAL.md](INSTALL_LOCAL.md) for detailed setup instructions, troubleshooting, and project structure.
 
-* `users`: Stores citizen accounts and officer logins.
-* `complaints`: Primary transaction table recording categories, victim info, and status indicators.
-* `complaint_categories`: Top-level groupings (Financial Fraud, Other Cyber Crime, Women and Children).
-* `complaint_subcategories`: Second-level groupings (UPI Fraud, Hacking, Blackmail).
-* `complaint_questions`: Form schemas containing field names, labels, options, and validations.
-* `complaint_answers`: User responses mapped to specific questions and complaint records.
-* `evidence_files`: Metadata log of uploaded screenshots, PDFs, or videos.
-* `complaint_status`: Status transition timeline history.
-* `suspect_reports`: Registry of suspect phone numbers, UPI IDs, urls, and email handles.
-* `notifications`: Simulated SMS / Email transaction log.
-* `audit_logs`: Activity logging for officer and system operations.
+---
+
+## License
+
+This project is for educational and portfolio purposes only. Not affiliated with any government entity.

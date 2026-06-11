@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,8 +24,12 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export const RegisterPage: React.FC = () => {
   const { register: authRegister } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Get redirect state if any
+  const fromObj = (location.state as any)?.from;
 
   const {
     register,
@@ -52,8 +56,13 @@ export const RegisterPage: React.FC = () => {
         email: data.email || null,
         password: data.password
       });
-      // Redirect to login page on success
-      navigate('/login', { state: { info: 'Registration successful. Please sign in.' } });
+      // Redirect to login page on success, preserving the redirect location
+      navigate('/login', { 
+        state: { 
+          info: 'Registration successful. Please sign in.',
+          from: fromObj 
+        } 
+      });
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.detail || 'An error occurred during registration.');
@@ -195,7 +204,7 @@ export const RegisterPage: React.FC = () => {
 
           <div className="text-center pt-2 border-t border-slate-150">
             <span className="text-xs text-gov-slate">Already have an account? </span>
-            <Link to="/login" className="text-xs font-bold text-gov-indigo hover:underline">
+            <Link to="/login" state={{ from: fromObj }} className="text-xs font-bold text-gov-indigo hover:underline">
               Sign In
             </Link>
           </div>

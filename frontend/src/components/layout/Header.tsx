@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Menu, X, LogOut, User as UserIcon, Dashboard } from 'lucide-react';
+import { Shield, Menu, X, LogOut } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();

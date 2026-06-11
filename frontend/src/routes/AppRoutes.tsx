@@ -21,7 +21,14 @@ export const AppRoutes: React.FC = () => {
       <Route path="/track" element={<TrackComplaint />} />
       <Route path="/suspect-search" element={<SuspectSearch />} />
       <Route path="/complaint-success" element={<ComplaintSuccess />} />
-      <Route path="/file-complaint" element={<ComplaintForm />} />
+      <Route
+        path="/file-complaint"
+        element={
+          <ProtectedRoute allowedRoles={['citizen']}>
+            <ComplaintForm />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Citizen Protected Pages */}
       <Route

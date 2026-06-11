@@ -22,8 +22,9 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Get path to redirect back to
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  // Get path to redirect back to, preserving query parameters (e.g. ?cat=FF)
+  const fromObj = (location.state as any)?.from;
+  const from = fromObj ? `${fromObj.pathname}${fromObj.search || ''}` : '/dashboard';
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,7 +238,7 @@ export const LoginPage: React.FC = () => {
 
           <div className="text-center pt-2 border-t border-slate-150">
             <span className="text-xs text-gov-slate">New citizen user? </span>
-            <Link to="/register" className="text-xs font-bold text-gov-indigo hover:underline">
+            <Link to="/register" state={{ from: fromObj }} className="text-xs font-bold text-gov-indigo hover:underline">
               Create portal account
             </Link>
           </div>
