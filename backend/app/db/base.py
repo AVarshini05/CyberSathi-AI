@@ -14,5 +14,4 @@ from app.models.complaint import (  # noqa
 from app.models.suspect import SuspectReport  # noqa
 from app.models.notification import Notification  # noqa
 from app.models.audit import AuditLog  # noqa
-from app.models.ai_session import AISession  # noqa
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useForm } from 'react-hook-form';
 import api from '../services/api';
@@ -13,11 +13,9 @@ import { ShieldAlert, User, Info, Link as LinkIcon, Upload, CheckSquare, Chevron
 export const ComplaintForm: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   
   // Form step controls
   const [step, setStep] = useState(1);
-  const [aiPrefillAnswers, setAiPrefillAnswers] = useState<any[]>([]);
 
   const stepsList = ['Category Selection', 'Victim Info', 'Incident Details', 'Suspect Details', 'Evidence Upload', 'Review & Submit'];
 
@@ -75,99 +73,7 @@ export const ComplaintForm: React.FC = () => {
     fetchCats();
   }, []);
 
-  // Helper to apply prefill data to React Hook Form
-  const applyPrefillData = useCallback((aiData: any, shouldGoToStep6: boolean = false) => {
-    if (!aiData) return;
 
-    if (aiData.category_id) {
-      setSelectedCatId(aiData.category_id);
-    }
-    if (aiData.subcategory_id) {
-      setSelectedSubId(aiData.subcategory_id);
-    }
-    
-    if (aiData.is_anonymous !== undefined) {
-      setIsAnonymous(!!aiData.is_anonymous);
-    }
-
-    // Pre-fill general fields
-    if (aiData.victim_name) setValue('victim_name', aiData.victim_name);
-    if (aiData.victim_mobile) setValue('victim_mobile', aiData.victim_mobile);
-    if (aiData.victim_email) setValue('victim_email', aiData.victim_email);
-    if (aiData.fraud_description) setValue('fraud_description', aiData.fraud_description);
-
-    // Pre-fill suspects
-    if (
-      aiData.suspect_name ||
-      aiData.suspect_mobile ||
-      aiData.suspect_email ||
-      aiData.suspect_upi ||
-      aiData.suspect_url ||
-      aiData.suspect_social_handle ||
-      aiData.suspect_details
-    ) {
-      setSuspects([{
-        suspect_name: aiData.suspect_name || '',
-        suspect_mobile: aiData.suspect_mobile || '',
-        suspect_email: aiData.suspect_email || '',
-        suspect_url: aiData.suspect_url || '',
-        suspect_upi: aiData.suspect_upi || '',
-        suspect_social_handle: aiData.suspect_social_handle || '',
-        details: aiData.suspect_details || ''
-      }]);
-    }
-
-    // Buffer the answers for dynamic questions
-    if (aiData.answers && Array.isArray(aiData.answers)) {
-      setAiPrefillAnswers(aiData.answers);
-    }
-
-    if (shouldGoToStep6) {
-      setStep(6);
-    } else if (aiData.step !== undefined) {
-      const targetStep = parseInt(aiData.step);
-      if (targetStep >= 1 && targetStep <= 6) {
-        setStep(targetStep);
-      }
-    }
-  }, [setValue, setSelectedCatId, setSelectedSubId, setIsAnonymous, setSuspects, setAiPrefillAnswers, setStep]);
-
-  // Load AI prefill data if present in route state (triggered via Assistant Auto-Fill button)
-  useEffect(() => {
-    const aiData = location.state?.aiPrefillData;
-    if (aiData) {
-      applyPrefillData(aiData, true);
-    }
-  }, [location.state, applyPrefillData]);
-
-  // Listen for live background updates from the AI Assistant
-  useEffect(() => {
-    const handlePrefillUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const aiData = customEvent.detail;
-      if (aiData) {
-        applyPrefillData(aiData, false); // Populate form values live in the background without changing steps
-      }
-    };
-    window.addEventListener('ai-prefill-update', handlePrefillUpdate);
-    return () => window.removeEventListener('ai-prefill-update', handlePrefillUpdate);
-  }, [applyPrefillData]);
-
-  // Apply dynamic prefilled answers when questions are loaded
-  useEffect(() => {
-    if (questions.length > 0 && aiPrefillAnswers.length > 0) {
-      aiPrefillAnswers.forEach(ans => {
-        const matchedQuestion = questions.find(
-          q => q.id === ans.question_id || q.field_name === ans.field_name
-        );
-        if (matchedQuestion) {
-          (setValue as any)(`dynamic_${matchedQuestion.id}`, ans.value);
-        }
-
-      });
-      setAiPrefillAnswers([]);
-    }
-  }, [questions, aiPrefillAnswers, setValue]);
 
 
   // Load subcategories when category changes

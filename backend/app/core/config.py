@@ -32,9 +32,6 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    # AI Services Keys
-    SARVAM_API_KEY: str = ""
-    GEMINI_API_KEY: str = ""
 
     # Database setup (local PostgreSQL)
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ccrms"
