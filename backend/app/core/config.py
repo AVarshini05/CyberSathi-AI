@@ -6,9 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "38b724f8d48416d8a23d6a2f7c0068a159feea6b4c10c0e86b3e70d44084f7b4"
+    SECRET_KEY: str = "9d04f2f4585141e6e9b4ffc78b27d42cfcf3280c7ea5d9f1092e039433db9bbf"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
-    PROJECT_NAME: str = "Cyber Crime Reporting Management System (CCRMS)"
+    PROJECT_NAME: str = "CyberSathi-AI"
 
     # CORS origins setup
     BACKEND_CORS_ORIGINS: List[str] = [

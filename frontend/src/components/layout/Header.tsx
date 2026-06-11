@@ -22,8 +22,8 @@ export const Header: React.FC = () => {
           <Link to="/" className="flex items-center space-x-3 hover:opacity-90">
             <Shield className="h-8 w-8 text-orange-500 animate-pulse" />
             <div>
-              <span className="font-extrabold text-lg tracking-wider block font-sans">CCRMS</span>
-              <span className="text-[10px] text-slate-300 block -mt-1 uppercase font-semibold">Cyber Crime Portal</span>
+              <span className="font-extrabold text-lg tracking-wider block font-sans">CyberSathi-AI</span>
+              <span className="text-[10px] text-slate-300 block -mt-1 uppercase font-semibold">Cyber Security Portal</span>
             </div>
           </Link>
 

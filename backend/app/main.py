@@ -50,10 +50,10 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
-    print("[STARTUP] CCRMS Backend is ready!")
+    print("[STARTUP] CyberSathi-AI Backend is ready!")
     print(f"[STARTUP] API Docs: http://localhost:8000/docs")
-    print(f"[STARTUP] Admin Login: admin@ccrms.gov.in / adminpassword")
-    print(f"[STARTUP] Officer Login: officer@ccrms.gov.in / officerpassword")
+    print(f"[STARTUP] Admin Login: admin@cybersathi.gov.in / adminpassword")
+    print(f"[STARTUP] Officer Login: officer@cybersathi.gov.in / officerpassword")
 
     yield
 

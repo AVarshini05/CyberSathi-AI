@@ -1,4 +1,4 @@
-# Cyber Crime Reporting Management System (CCRMS)
+# CyberSathi-AI
 
 A production-grade cybercrime complaint portal inspired by India's NCRP, built for educational and portfolio purposes.
 
@@ -83,8 +83,8 @@ npm run dev
 
 | Role    | Email                  | Password        |
 |---------|------------------------|-----------------|
-| Admin   | admin@ccrms.gov.in     | adminpassword   |
-| Officer | officer@ccrms.gov.in   | officerpassword |
+| Admin   | admin@cybersathi.gov.in     | adminpassword   |
+| Officer | officer@cybersathi.gov.in   | officerpassword |
 
 ---
 

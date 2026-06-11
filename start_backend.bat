@@ -22,8 +22,8 @@ pip install -r requirements.txt --quiet
 echo [3/3] Starting FastAPI server on http://localhost:8000 ...
 echo.
 echo   API Docs:     http://localhost:8000/docs
-echo   Admin Login:  admin@ccrms.gov.in / adminpassword
-echo   Officer Login: officer@ccrms.gov.in / officerpassword
+echo   Admin Login:  admin@cybersathi.gov.in / adminpassword
+echo   Officer Login: officer@cybersathi.gov.in / officerpassword
 echo.
 echo Press Ctrl+C to stop the server.
 echo ================================================

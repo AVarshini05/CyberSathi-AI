@@ -1,6 +1,6 @@
-# CCRMS - Local Installation Guide
+# CyberSathi-AI - Local Installation Guide
 
-> Complete step-by-step guide to run the Cyber Crime Reporting Management System on your local machine (Windows).
+> Complete step-by-step guide to run CyberSathi-AI on your local machine (Windows).
 
 ---
 
@@ -105,8 +105,8 @@ npm run dev
 
 | Role    | Email                  | Password        |
 |---------|------------------------|-----------------|
-| Admin   | admin@ccrms.gov.in     | adminpassword   |
-| Officer | officer@ccrms.gov.in   | officerpassword |
+| Admin   | admin@cybersathi.gov.in     | adminpassword   |
+| Officer | officer@cybersathi.gov.in   | officerpassword |
 
 > Citizens can register new accounts through the portal.
 

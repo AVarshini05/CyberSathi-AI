@@ -45,7 +45,7 @@ export const CitizenDashboard: React.FC = () => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = `CCRMS_ACK_${ackNumber}.pdf`;
+      link.download = `CyberSathi_ACK_${ackNumber}.pdf`;
       link.click();
     } catch (err) {
       console.error('Failed to download PDF receipt:', err);

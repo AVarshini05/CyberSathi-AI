@@ -58,7 +58,7 @@ class CRUDComplaint:
         # 2. Sequential ACK Number Auto-Increment logic (Safe transaction)
         current_year = datetime.datetime.now().year
         # Count complaints in this category and year
-        prefix = f"CCRMS-{cat_code}-{current_year}-"
+        prefix = f"CYBERSATHI-{cat_code}-{current_year}-"
         count = db.query(Complaint).filter(
             Complaint.acknowledgement_number.like(f"{prefix}%")
         ).count() + 1

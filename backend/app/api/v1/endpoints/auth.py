@@ -111,7 +111,7 @@ def request_otp(
     
     # Send simulation
     otp_code = "123456"  # Simulated static OTP for dev purposes
-    msg = f"CCRMS: Your login verification code is {otp_code}. Valid for 5 minutes."
+    msg = f"CyberSathi-AI: Your login verification code is {otp_code}. Valid for 5 minutes."
     
     db_notif = Notification(
         user_id=user.id if user else None,

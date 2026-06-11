@@ -81,7 +81,7 @@ export const LoginPage: React.FC = () => {
               <Shield className="h-6 w-6" />
             </div>
             <h2 className="text-2xl font-black text-gov-navy tracking-tight font-sans">
-              Sign In to CCRMS
+              Sign In to CyberSathi-AI
             </h2>
             <p className="text-xs text-gov-slate">
               Access the secure Citizen Portal to report or track complaints.

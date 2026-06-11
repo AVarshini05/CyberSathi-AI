@@ -97,7 +97,7 @@ export const AdminDashboard: React.FC = () => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = `CCRMS_ACK_${ackNumber}.pdf`;
+      link.download = `CyberSathi_ACK_${ackNumber}.pdf`;
       link.click();
     } catch (err) {
       console.error('Failed to download PDF receipt:', err);
@@ -160,7 +160,7 @@ export const AdminDashboard: React.FC = () => {
               <label className="text-[10px] font-bold text-slate-700 mb-1">ACK Number</label>
               <input
                 type="text"
-                placeholder="e.g. CCRMS-FF-"
+                placeholder="e.g. CYBERSATHI-FF-"
                 value={filterAck}
                 onChange={(e) => setFilterAck(e.target.value)}
                 className="border border-gov-border rounded-lg p-2 text-xs outline-none bg-white focus:border-gov-indigo"

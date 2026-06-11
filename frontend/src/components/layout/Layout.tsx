@@ -21,9 +21,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-white font-bold mb-3 text-sm">CCRMS Portal</h3>
+              <h3 className="text-white font-bold mb-3 text-sm">CyberSathi-AI Portal</h3>
               <p className="leading-relaxed">
-                Cyber Crime Reporting Management System is an educational simulation portal inspired by India's National Cyber Crime Reporting Portal. Report cybercrimes securely and track their investigation.
+                CyberSathi-AI is an educational simulation portal inspired by India's National Cyber Crime Reporting Portal. Report cybercrimes securely and track their investigation.
               </p>
             </div>
             <div>
@@ -48,7 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-slate-800 text-center flex flex-col sm:flex-row justify-between items-center text-[10px]">
-            <p>&copy; {new Date().getFullYear()} CCRMS. Designed for Portfolio & educational review.</p>
+            <p>&copy; {new Date().getFullYear()} CyberSathi-AI. Designed for Portfolio & educational review.</p>
             <p className="space-x-4 mt-2 sm:mt-0">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <span>&bull;</span>

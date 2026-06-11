@@ -55,7 +55,7 @@ export const TrackComplaint: React.FC = () => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = `CCRMS_ACK_${ackNumber}.pdf`;
+      link.download = `CyberSathi_ACK_${ackNumber}.pdf`;
       link.click();
     } catch (err) {
       console.error('Failed to download PDF receipt:', err);
@@ -97,7 +97,7 @@ export const TrackComplaint: React.FC = () => {
               <Search className="absolute left-3 top-3.5 h-4 w-4 text-gov-slate" />
               <input
                 type="text"
-                placeholder="e.g. CCRMS-FF-2026-000001 or 9876543210"
+                placeholder="e.g. CYBERSATHI-FF-2026-000001 or 9876543210"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-3 border border-gov-border rounded-lg text-sm outline-none focus:border-gov-indigo transition-colors"

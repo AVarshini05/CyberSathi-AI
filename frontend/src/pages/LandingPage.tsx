@@ -14,9 +14,8 @@ export const LandingPage: React.FC = () => {
             National Cyber Security Portal
           </span>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight font-sans">
-            Cyber Crime Reporting <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
-              Management System
+              CyberSathi-AI
             </span>
           </h1>
           <p className="text-slate-300 max-w-2xl mx-auto text-base md:text-lg font-light leading-relaxed">

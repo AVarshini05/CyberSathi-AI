@@ -32,7 +32,7 @@ export const ComplaintSuccess: React.FC = () => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = `CCRMS_ACK_${complaint.acknowledgement_number}.pdf`;
+      link.download = `CyberSathi_ACK_${complaint.acknowledgement_number}.pdf`;
       link.click();
     } catch (err) {
       console.error('Failed to download receipt PDF:', err);

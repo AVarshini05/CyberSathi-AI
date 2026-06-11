@@ -7,10 +7,10 @@ from app.core.security import get_password_hash
 
 def init_db(db: Session) -> None:
     # 1. Create Default Admin/Officer if not exist
-    admin_user = db.query(User).filter(User.email == "admin@ccrms.gov.in").first()
+    admin_user = db.query(User).filter(User.email == "admin@cybersathi.gov.in").first()
     if not admin_user:
         admin_user = User(
-            email="admin@ccrms.gov.in",
+            email="admin@cybersathi.gov.in",
             mobile_number="9999999999",
             full_name="System Administrator",
             hashed_password=get_password_hash("adminpassword"),
@@ -20,10 +20,10 @@ def init_db(db: Session) -> None:
         )
         db.add(admin_user)
 
-    officer_user = db.query(User).filter(User.email == "officer@ccrms.gov.in").first()
+    officer_user = db.query(User).filter(User.email == "officer@cybersathi.gov.in").first()
     if not officer_user:
         officer_user = User(
-            email="officer@ccrms.gov.in",
+            email="officer@cybersathi.gov.in",
             mobile_number="8888888888",
             full_name="Investigation Officer Ramesh",
             hashed_password=get_password_hash("officerpassword"),

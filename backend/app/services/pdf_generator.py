@@ -95,7 +95,7 @@ def generate_acknowledgement_pdf(complaint_data: dict, verification_url: str) ->
     )
     
     # 4. Header elements
-    story.append(Paragraph("CYBER CRIME REPORTING MANAGEMENT SYSTEM (CCRMS)", title_style))
+    story.append(Paragraph("CYBER SATHI AI (CyberSathi-AI)", title_style))
     story.append(Spacer(1, 4))
     story.append(Paragraph("Inspired by National Cyber Crime Reporting Portal", subtitle_style))
     story.append(Spacer(1, 15))
@@ -187,7 +187,7 @@ def generate_acknowledgement_pdf(complaint_data: dict, verification_url: str) ->
     # 9. Signatures
     sig_data = [
         ["", "Authorized Signature / QR Verified"],
-        ["", "Cyber Crime Cell (CCRMS)"]
+        ["", "CyberSathi Cell (CyberSathi-AI)"]
     ]
     sig_table = Table(sig_data, colWidths=[4.9*inch, 2.5*inch])
     sig_table.setStyle(TableStyle([
