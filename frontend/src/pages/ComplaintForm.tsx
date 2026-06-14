@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useForm } from 'react-hook-form';
 import api from '../services/api';
@@ -8,14 +8,24 @@ import { ComplaintCategory, ComplaintSubcategory, ComplaintQuestion } from '../t
 import FileUpload from '../components/common/FileUpload';
 import DynamicForm from '../components/common/DynamicForm';
 import Layout from '../components/layout/Layout';
-import { ShieldAlert, User, Info, Link as LinkIcon, Upload, CheckSquare, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ShieldAlert, User, Info, Link as LinkIcon, Upload, CheckSquare, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import ComplaintClassifier from '../components/common/ComplaintClassifier';
+import ComplaintEntityExtractor from '../components/common/ComplaintEntityExtractor';
 
 export const ComplaintForm: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
+  // Query parameters to trigger AI Assist
+  const searchParams = new URLSearchParams(location.search);
+  const isAiAssistMode = searchParams.get('ai') === 'true';
+
   // Form step controls
   const [step, setStep] = useState(1);
+  const [showClassifier, setShowClassifier] = useState(isAiAssistMode);
+  const [aiSuccessMessage, setAiSuccessMessage] = useState<string | null>(null);
+  const [aiDescription, setAiDescription] = useState('');
 
   const stepsList = ['Category Selection', 'Victim Info', 'Incident Details', 'Suspect Details', 'Evidence Upload', 'Review & Submit'];
 
@@ -87,7 +97,12 @@ export const ComplaintForm: React.FC = () => {
       try {
         const response = await api.get(`/complaints/categories/${selectedCatId}/subcategories`);
         setSubcategories(response.data);
-        setSelectedSubId('');
+        
+        // Preserve subcategory ID if it exists in the loaded list, otherwise reset
+        setSelectedSubId((currentSubId) => {
+          const hasSelectedSub = response.data.some((s: any) => s.id === Number(currentSubId));
+          return hasSelectedSub ? currentSubId : '';
+        });
       } catch (err) {
         console.error('Failed to load subcategories:', err);
       }
@@ -117,6 +132,78 @@ export const ComplaintForm: React.FC = () => {
     };
     fetchQuestions();
   }, [selectedSubId]);
+
+  const handleAcceptAI = (categoryId: number, subcategoryId: number, description: string) => {
+    setSelectedCatId(categoryId);
+    setSelectedSubId(subcategoryId);
+    setAiDescription(description);
+    setAiSuccessMessage("AI suggestion accepted. Category and Subcategory selected successfully. Please review and click 'Continue' below.");
+  };
+
+  const handleIgnoreAI = () => {
+    setSelectedCatId('');
+    setSelectedSubId('');
+    setAiSuccessMessage(null);
+    setAiDescription('');
+    setShowClassifier(false);
+  };
+
+  const handleApplyExtraction = (extracted: Record<string, string>, evidenceFlags: Record<string, boolean>) => {
+    // Prefill victim fields
+    if (extracted.victim_name) setValue('victim_name', extracted.victim_name);
+    if (extracted.victim_mobile) setValue('victim_mobile', extracted.victim_mobile);
+    if (extracted.victim_email) setValue('victim_email', extracted.victim_email);
+    if (extracted.victim_gender) setValue('victim_gender', extracted.victim_gender);
+    if (extracted.victim_state) setValue('victim_state', extracted.victim_state);
+    if (extracted.victim_city) setValue('victim_address', extracted.victim_city);
+
+    // Prefill modus operandi / fraud description
+    if (aiDescription) {
+      setValue('fraud_description', aiDescription);
+    }
+
+    // Map dynamic questions (like amount, transaction_id, etc.)
+    questions.forEach((q) => {
+      const fieldName = q.field_name.toLowerCase();
+      if (extracted[q.field_name]) {
+        setValue(`dynamic_${q.id}` as any, extracted[q.field_name]);
+      } else if (fieldName === 'amount' && (extracted.amount_lost || extracted.amount_demanded)) {
+        setValue(`dynamic_${q.id}` as any, extracted.amount_lost || extracted.amount_demanded);
+      } else if (fieldName === 'amount_lost' && extracted.amount_lost) {
+        setValue(`dynamic_${q.id}` as any, extracted.amount_lost);
+      } else if (fieldName === 'amount_demanded' && extracted.amount_demanded) {
+        setValue(`dynamic_${q.id}` as any, extracted.amount_demanded);
+      } else if ((fieldName === 'account_id' || fieldName === 'username' || fieldName === 'social_media_id') && extracted.account_id) {
+        setValue(`dynamic_${q.id}` as any, extracted.account_id);
+      } else if ((fieldName === 'threat_type' || fieldName === 'threat') && extracted.threat_type) {
+        setValue(`dynamic_${q.id}` as any, extracted.threat_type);
+      } else if (fieldName === 'transaction_id' && (extracted.transaction_id || extracted.utr_number || extracted.reference_number)) {
+        setValue(`dynamic_${q.id}` as any, extracted.transaction_id || extracted.utr_number || extracted.reference_number);
+      } else if (fieldName === 'transaction_date' && extracted.incident_date) {
+        setValue(`dynamic_${q.id}` as any, extracted.incident_date);
+      } else if (fieldName === 'platform' && (extracted.platform || extracted.fraud_platform)) {
+        setValue(`dynamic_${q.id}` as any, extracted.platform || extracted.fraud_platform);
+      } else if ((fieldName === 'fraud_wallet' || fieldName === 'receiver_wallet' || fieldName === 'wallet_address') && extracted.crypto_wallet_address) {
+        setValue(`dynamic_${q.id}` as any, extracted.crypto_wallet_address);
+      }
+    });
+
+    // Prefill suspect list (only keep one card prefilled initially as instructed)
+    setSuspects([{
+      suspect_name: extracted.suspect_name || '',
+      suspect_mobile: extracted.suspect_mobile || '',
+      suspect_upi: extracted.suspect_upi || '',
+      suspect_url: extracted.website_url || extracted.suspect_url || '',
+      suspect_social_handle: extracted.suspect_social_media_id || extracted.suspect_social_handle || '',
+      details: ''
+    }]);
+
+    setAiSuccessMessage("Extracted details applied to form successfully. Review them on subsequent steps.");
+  };
+
+  const handleIgnoreExtraction = () => {
+    setAiDescription('');
+  };
 
   const handleAddSuspect = () => {
     setSuspects([...suspects, { suspect_name: '', suspect_mobile: '', suspect_email: '', suspect_url: '', suspect_upi: '', suspect_social_handle: '', details: '' }]);
@@ -213,36 +300,116 @@ export const ComplaintForm: React.FC = () => {
               <ShieldAlert className="h-5 w-5 text-orange-600 mr-2" />
               Select Crime Classification
             </h3>
-            
-            <div className="flex flex-col">
-              <label className="text-xs font-bold text-slate-700 mb-1.5">Crime Category <span className="text-red-500">*</span></label>
-              <select
-                required
-                value={selectedCatId}
-                onChange={(e) => setSelectedCatId(e.target.value ? Number(e.target.value) : '')}
-                className="border border-gov-border rounded-lg p-2.5 text-sm outline-none bg-white focus:border-gov-indigo"
+
+            {/* AI vs Manual Tab Navigation */}
+            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => { setShowClassifier(true); setAiSuccessMessage(null); }}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                  showClassifier
+                    ? 'bg-white text-gov-navy shadow-sm'
+                    : 'text-gov-slate hover:text-gov-navy'
+                }`}
               >
-                <option value="">-- Choose Category --</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                AI Assistant Classifier
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowClassifier(false); setAiSuccessMessage(null); }}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                  !showClassifier
+                    ? 'bg-white text-gov-navy shadow-sm'
+                    : 'text-gov-slate hover:text-gov-navy'
+                }`}
+              >
+                Manual Selection
+              </button>
             </div>
 
-            {selectedCatId && (
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-700 mb-1.5">Incident Subcategory <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={selectedSubId}
-                  onChange={(e) => setSelectedSubId(e.target.value ? Number(e.target.value) : '')}
-                  className="border border-gov-border rounded-lg p-2.5 text-sm outline-none bg-white focus:border-gov-indigo"
-                >
-                  <option value="">-- Choose Subcategory --</option>
-                  {subcategories.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+            {/* Success Alert Banner */}
+            {aiSuccessMessage && (
+              <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 p-4 rounded-xl flex items-start space-x-3 text-xs leading-relaxed">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                <div>
+                  <p className="font-bold">AI Prefill Applied</p>
+                  <p className="mt-0.5 text-emerald-700">{aiSuccessMessage}</p>
+                </div>
+              </div>
+            )}
+
+            {showClassifier ? (
+              <div className="space-y-4">
+                <ComplaintClassifier
+                  onAccept={handleAcceptAI}
+                  onChangeSelection={() => {
+                    setShowClassifier(false);
+                    setAiSuccessMessage(null);
+                  }}
+                  onIgnore={handleIgnoreAI}
+                />
+                {aiDescription && (
+                  <ComplaintEntityExtractor
+                    description={aiDescription}
+                    onApply={handleApplyExtraction}
+                    onIgnore={handleIgnoreExtraction}
+                  />
+                )}
+                {(selectedCatId || selectedSubId) && (
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 mt-2 space-y-4 shadow-sm">
+                    <h4 className="font-extrabold text-[10px] text-gov-navy uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                      Selected Classification Details (Pre-filled by AI)
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-gov-slate block">Category</span>
+                        <span className="font-bold text-slate-800">
+                          {categories.find(c => c.id === Number(selectedCatId))?.name || 'Not Selected'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-gov-slate block">Subcategory</span>
+                        <span className="font-bold text-slate-800">
+                          {subcategories.find(s => s.id === Number(selectedSubId))?.name || 'Not Selected'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-slate-700 mb-1.5">Crime Category <span className="text-red-500">*</span></label>
+                  <select
+                    required
+                    value={selectedCatId}
+                    onChange={(e) => setSelectedCatId(e.target.value ? Number(e.target.value) : '')}
+                    className="border border-gov-border rounded-lg p-2.5 text-sm outline-none bg-white focus:border-gov-indigo"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedCatId && (
+                  <div className="flex flex-col">
+                    <label className="text-xs font-bold text-slate-700 mb-1.5">Incident Subcategory <span className="text-red-500">*</span></label>
+                    <select
+                      required
+                      value={selectedSubId}
+                      onChange={(e) => setSelectedSubId(e.target.value ? Number(e.target.value) : '')}
+                      className="border border-gov-border rounded-lg p-2.5 text-sm outline-none bg-white focus:border-gov-indigo"
+                    >
+                      <option value="">-- Choose Subcategory --</option>
+                      {subcategories.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 

@@ -51,9 +51,14 @@ class CRUDUser:
         return db_obj
 
     def authenticate(
-        self, db: Session, *, mobile_number: str, password: str
+        self, db: Session, *, login_identifier: str, password: str
     ) -> Optional[User]:
-        user = self.get_by_mobile(db, mobile_number=mobile_number)
+        # 1. Search by mobile_number first
+        user = self.get_by_mobile(db, mobile_number=login_identifier)
+        if not user:
+            # 2. Search by email (case-insensitive)
+            from sqlalchemy import func
+            user = db.query(User).filter(func.lower(User.email) == func.lower(login_identifier)).first()
         if not user:
             return None
         if not verify_password(password, user.hashed_password):

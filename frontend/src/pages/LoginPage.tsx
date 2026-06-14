@@ -4,6 +4,20 @@ import { useAuth } from '../context/AuthContext';
 import { Shield, KeyRound, Smartphone, AlertCircle } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 
+const getErrorMessage = (err: any, fallback: string): string => {
+  const detail = err.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    const first = detail[0];
+    if (first && first.msg) {
+      const field = first.loc && first.loc.length > 1 ? first.loc[1] : '';
+      return field ? `${field}: ${first.msg}` : first.msg;
+    }
+  }
+  return fallback;
+};
+
 export const LoginPage: React.FC = () => {
   const { login, requestOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
@@ -35,7 +49,7 @@ export const LoginPage: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.detail || 'Incorrect mobile number or password.');
+      setError(getErrorMessage(err, 'Invalid email/mobile number or password.'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +64,7 @@ export const LoginPage: React.FC = () => {
       setOtpSent(true);
       setDevOtpHint(hint);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Mobile number not found. Please register first.');
+      setError(getErrorMessage(err, 'Mobile number not found. Please register first.'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +78,7 @@ export const LoginPage: React.FC = () => {
       await verifyOTP(mobileNumber, otpCode);
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid OTP code.');
+      setError(getErrorMessage(err, 'Invalid OTP code.'));
     } finally {
       setLoading(false);
     }
@@ -128,12 +142,12 @@ export const LoginPage: React.FC = () => {
               <div className="flex flex-col">
                 <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center">
                   <Smartphone className="h-3.5 w-3.5 mr-1 text-gov-slate" />
-                  Registered Mobile Number
+                  Mobile Number / Email Address
                 </label>
                 <input
-                  type="tel"
+                  type="text"
                   required
-                  placeholder="Enter 10-digit mobile number"
+                  placeholder="Enter mobile number or email"
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   className="border border-gov-border rounded-lg p-2.5 text-sm outline-none focus:border-gov-indigo transition-colors"

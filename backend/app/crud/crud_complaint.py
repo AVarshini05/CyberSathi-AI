@@ -49,7 +49,7 @@ class CRUDComplaint:
         ).all()
 
     def create_complaint(
-        self, db: Session, *, obj_in: ComplaintCreate, user_id: Optional[int] = None
+        self, db: Session, *, obj_in: ComplaintCreate, user_id: Optional[int] = None, status: str = "Submitted"
     ) -> Complaint:
         # 1. Fetch category code
         category = db.query(ComplaintCategory).filter(ComplaintCategory.id == obj_in.category_id).first()
@@ -78,7 +78,7 @@ class CRUDComplaint:
             victim_address=obj_in.victim_address,
             victim_state=obj_in.victim_state,
             fraud_description=obj_in.fraud_description,
-            current_status="Submitted",
+            current_status=status,
         )
         db.add(db_complaint)
         db.flush()  # Gets the database-assigned complaint ID
@@ -109,8 +109,8 @@ class CRUDComplaint:
         # 6. Add initial status history
         db_status = ComplaintStatus(
             complaint_id=db_complaint.id,
-            status="Submitted",
-            remarks="Complaint registered successfully.",
+            status=status,
+            remarks="Complaint registered successfully through Voice Agent." if status == "Pending Employee Review" else "Complaint registered successfully.",
             updated_by=user_id
         )
         db.add(db_status)
@@ -246,7 +246,7 @@ class CRUDComplaint:
         total = query.count()
         open_count = query.filter(Complaint.current_status.in_(["Submitted", "Under Review", "Assigned", "Investigation In Progress", "Additional Information Required"])).count()
         closed_count = query.filter(Complaint.current_status == "Closed").count()
-        draft_count = 0  # Not fully implemented yet, default 0
+        draft_count = query.filter(Complaint.current_status == "Pending Employee Review").count()
 
         return {
             "total_complaints": total,

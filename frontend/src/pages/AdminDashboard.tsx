@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Complaint, DashboardStats } from '../types';
 import Layout from '../components/layout/Layout';
-import { Search, Shield, Eye, ShieldAlert, FileText, CheckCircle2, Clock, CheckSquare, Edit, Download } from 'lucide-react';
+import { Search, Shield, Eye, ShieldAlert, FileText, CheckCircle2, Clock, CheckSquare, Edit, Download, RefreshCw } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -24,6 +24,28 @@ export const AdminDashboard: React.FC = () => {
   const [newStatus, setNewStatus] = useState('');
   const [statusRemarks, setStatusRemarks] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Edit mode state for Pending Employee Review
+  const [editVictimName, setEditVictimName] = useState('');
+  const [editVictimMobile, setEditVictimMobile] = useState('');
+  const [editVictimEmail, setEditVictimEmail] = useState('');
+  const [editVictimState, setEditVictimState] = useState('');
+  const [editVictimAddress, setEditVictimAddress] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editAnswers, setEditAnswers] = useState<Record<number, string>>({}); // question_id -> value
+  const [editSuspect, setEditSuspect] = useState<any>({
+    id: null,
+    suspect_name: '',
+    suspect_mobile: '',
+    suspect_email: '',
+    suspect_url: '',
+    suspect_upi: '',
+    suspect_social_handle: '',
+    details: ''
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const isHighlight = (val: string) => val === 'REVIEW REQUIRED' || val === 'UNKNOWN';
 
   const fetchData = async () => {
     setLoading(true);
@@ -65,7 +87,97 @@ export const AdminDashboard: React.FC = () => {
     // Trigger list fetch
     setTimeout(() => fetchData(), 50);
   };
+  useEffect(() => {
+    if (selectedCase) {
+      setEditVictimName(selectedCase.victim_name || '');
+      setEditVictimMobile(selectedCase.victim_mobile || '');
+      setEditVictimEmail(selectedCase.victim_email || '');
+      setEditVictimState(selectedCase.victim_state || '');
+      setEditVictimAddress(selectedCase.victim_address || '');
+      setEditDescription(selectedCase.fraud_description || '');
+      
+      const answersMap: Record<number, string> = {};
+      selectedCase.answers.forEach(ans => {
+        answersMap[ans.question_id] = ans.value;
+      });
+      setEditAnswers(answersMap);
 
+      if (selectedCase.suspect_reports && selectedCase.suspect_reports.length > 0) {
+        const s = selectedCase.suspect_reports[0];
+        setEditSuspect({
+          id: s.id,
+          suspect_name: s.suspect_name || '',
+          suspect_mobile: s.suspect_mobile || '',
+          suspect_email: s.suspect_email || '',
+          suspect_url: s.suspect_url || '',
+          suspect_upi: s.suspect_upi || '',
+          suspect_social_handle: s.suspect_social_handle || '',
+          details: s.details || ''
+        });
+      } else {
+        setEditSuspect({
+          id: null,
+          suspect_name: '',
+          suspect_mobile: '',
+          suspect_email: '',
+          suspect_url: '',
+          suspect_upi: '',
+          suspect_social_handle: '',
+          details: ''
+        });
+      }
+    }
+  }, [selectedCase]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCase) return;
+
+    setSavingEdit(true);
+    
+    // Format answers payload
+    const answersPayload = Object.keys(editAnswers).map(qIdStr => ({
+      question_id: Number(qIdStr),
+      value: editAnswers[Number(qIdStr)]
+    }));
+
+    // Format suspects payload
+    const suspectsPayload = [
+      {
+        suspect_name: editSuspect.suspect_name || 'UNKNOWN',
+        suspect_mobile: editSuspect.suspect_mobile || 'UNKNOWN',
+        suspect_email: editSuspect.suspect_email || 'UNKNOWN',
+        suspect_url: editSuspect.suspect_url || 'UNKNOWN',
+        suspect_upi: editSuspect.suspect_upi || 'UNKNOWN',
+        suspect_social_handle: editSuspect.suspect_social_handle || 'UNKNOWN',
+        details: editSuspect.details || 'UNKNOWN'
+      }
+    ];
+
+    const payload = {
+      victim_name: selectedCase.is_anonymous ? 'Anonymous' : (editVictimName || null),
+      victim_mobile: (selectedCase.is_anonymous || !editVictimMobile) ? null : editVictimMobile,
+      victim_email: (selectedCase.is_anonymous || !editVictimEmail) ? null : editVictimEmail,
+      victim_gender: selectedCase.victim_gender,
+      victim_address: (selectedCase.is_anonymous || !editVictimAddress) ? null : editVictimAddress,
+      victim_state: (selectedCase.is_anonymous || !editVictimState) ? null : editVictimState,
+      fraud_description: editDescription,
+      answers: answersPayload,
+      suspect_details: suspectsPayload
+    };
+
+    try {
+      const response = await api.put(`/complaints/${selectedCase.id}/review-update`, payload);
+      setSelectedCase(response.data);
+      fetchData(); // Refresh list and stats
+      alert('Complaint verified and successfully submitted to NCRP.');
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      alert('Error finalizing complaint review.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
   const handleUpdateStatus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCase || !newStatus) return;
@@ -194,7 +306,7 @@ export const AdminDashboard: React.FC = () => {
                 className="border border-gov-border rounded-lg p-2.5 text-xs outline-none bg-white focus:border-gov-indigo"
               >
                 <option value="">-- All --</option>
-                {['Submitted', 'Under Review', 'Assigned', 'Investigation In Progress', 'Additional Information Required', 'Closed'].map(st => (
+                {['Pending Employee Review', 'Submitted', 'Under Review', 'Assigned', 'Investigation In Progress', 'Additional Information Required', 'Closed'].map(st => (
                   <option key={st} value={st}>{st}</option>
                 ))}
               </select>
@@ -253,7 +365,11 @@ export const AdminDashboard: React.FC = () => {
                         <td className="py-3.5 px-4">{c.category.name}</td>
                         <td className="py-3.5 px-4 text-gov-slate">{new Date(c.submission_timestamp).toLocaleDateString()}</td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className="text-[9px] font-extrabold bg-orange-55 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full uppercase">
+                          <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-full uppercase ${
+                            c.current_status === 'Pending Employee Review'
+                              ? 'bg-red-50 text-red-650 border-red-200 animate-pulse'
+                              : 'bg-orange-55 text-orange-600 border border-orange-200'
+                          }`}>
                             {c.current_status}
                           </span>
                         </td>
@@ -290,133 +406,321 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
 
-              {/* Victim profile */}
-              <div className="space-y-3 text-xs border-b border-slate-100 pb-4">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Victim Information</h4>
-                {selectedCase.is_anonymous ? (
-                  <p className="text-red-650 italic font-bold">Anonymous Filing (No profile details shared)</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-y-2">
-                    <div>
-                      <span className="text-gov-slate font-medium block">Name</span>
-                      <span className="font-bold text-slate-800">{selectedCase.victim_name || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-gov-slate font-medium block">Mobile</span>
-                      <span className="font-bold text-slate-800">{selectedCase.victim_mobile || 'N/A'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-gov-slate font-medium block">Email</span>
-                      <span className="font-bold text-slate-800">{selectedCase.victim_email || 'N/A'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-gov-slate font-medium block">State & Address</span>
-                      <span className="font-bold text-slate-800">{selectedCase.victim_state || 'N/A'}, {selectedCase.victim_address || 'N/A'}</span>
-                    </div>
+              {selectedCase.current_status === 'Pending Employee Review' ? (
+                <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs font-sans">
+                  <div className="bg-red-50 border border-red-200 text-red-800 p-3.5 rounded-xl font-bold mb-2 leading-relaxed">
+                    CRITICAL: Resolve all highlighted `REVIEW REQUIRED` and `UNKNOWN` fields before finalizing.
                   </div>
-                )}
-              </div>
 
-              {/* Answers */}
-              <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Answers & Description</h4>
-                <p className="text-slate-750 font-medium italic bg-slate-50 p-2.5 rounded border border-slate-150">{selectedCase.fraud_description}</p>
-                
-                <div className="space-y-1 mt-3">
-                  {selectedCase.answers.map((ans, idx) => (
-                    <div key={idx} className="flex justify-between border-b border-slate-50 py-1">
-                      <span className="font-semibold text-slate-500">{ans.field_label}:</span>
-                      <span className="font-bold text-slate-800">{ans.value}</span>
+                  {/* Victim details */}
+                  {!selectedCase.is_anonymous && (
+                    <div className="space-y-3 border-b border-slate-100 pb-4">
+                      <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Victim Details</h4>
+                      
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-650 mb-1">Victim Name</label>
+                        <input
+                          type="text"
+                          value={editVictimName}
+                          onChange={(e) => setEditVictimName(e.target.value)}
+                          className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                            isHighlight(editVictimName) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-655 mb-1">Victim Mobile</label>
+                        <input
+                          type="text"
+                          value={editVictimMobile}
+                          onChange={(e) => setEditVictimMobile(e.target.value)}
+                          className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                            isHighlight(editVictimMobile) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-660 mb-1">Victim Email</label>
+                        <input
+                          type="text"
+                          value={editVictimEmail}
+                          onChange={(e) => setEditVictimEmail(e.target.value)}
+                          className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                            isHighlight(editVictimEmail) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                          }`}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col">
+                          <label className="text-[10px] font-bold text-slate-665 mb-1">Victim State</label>
+                          <input
+                            type="text"
+                            value={editVictimState}
+                            onChange={(e) => setEditVictimState(e.target.value)}
+                            className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                              isHighlight(editVictimState) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                            }`}
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-[10px] font-bold text-slate-670 mb-1">Victim Address</label>
+                          <input
+                            type="text"
+                            value={editVictimAddress}
+                            onChange={(e) => setEditVictimAddress(e.target.value)}
+                            className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                              isHighlight(editVictimAddress) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                            }`}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
 
-              {/* Suspect reports */}
-              {selectedCase.suspect_reports.length > 0 && (
-                <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
-                  <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px] text-red-650">Suspect Registry Entries</h4>
-                  {selectedCase.suspect_reports.map((s, idx) => (
-                    <div key={idx} className="bg-red-50/20 border border-red-200/50 p-3 rounded-lg space-y-1">
-                      {s.suspect_name && <p><span className="font-bold">Name:</span> {s.suspect_name}</p>}
-                      {s.suspect_mobile && <p><span className="font-bold">Phone:</span> {s.suspect_mobile}</p>}
-                      {s.suspect_upi && <p><span className="font-bold">UPI ID:</span> {s.suspect_upi}</p>}
-                      {s.suspect_email && <p><span className="font-bold">Email:</span> {s.suspect_email}</p>}
-                      {s.suspect_url && <p><span className="font-bold">URL:</span> {s.suspect_url}</p>}
-                      {s.details && <p className="italic text-gov-slate mt-1">Details: {s.details}</p>}
+                  {/* Answers & description */}
+                  <div className="space-y-3 border-b border-slate-100 pb-4">
+                    <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Incident Description & Parameters</h4>
+                    
+                    <div className="flex flex-col">
+                      <label className="text-[10px] font-bold text-slate-600 mb-1">Crime Description Narrative</label>
+                      <textarea
+                        rows={4}
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        className="border border-gov-border rounded-lg p-2.5 text-xs outline-none bg-white focus:border-gov-indigo text-slate-800 leading-relaxed font-sans"
+                      />
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {/* Evidences list */}
-              {selectedCase.evidence_files.length > 0 && (
-                <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
-                  <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Evidence attachments</h4>
-                  <ul className="space-y-1.5">
-                    {selectedCase.evidence_files.map((ev, idx) => (
-                      <li key={idx} className="text-[10px] text-gov-indigo hover:underline flex items-center space-x-1.5">
-                        <span>&bull;</span>
-                        <a href={`/uploads/${ev.file_path.split(/[\\/]/).pop()}`} target="_blank" rel="noreferrer" className="flex items-center space-x-1">
-                          <span>{ev.file_name}</span>
-                          <span className="text-[8px] text-gov-slate">({Math.round(ev.file_size / 1024)} KB)</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Update Status form */}
-              <div className="space-y-3 bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px] flex items-center">
-                  <Edit className="h-3.5 w-3.5 mr-1 text-gov-indigo" />
-                  Action: Update Complaint Status
-                </h4>
-
-                <form onSubmit={handleUpdateStatus} className="space-y-3">
-                  <div className="flex flex-col">
-                    <label className="text-[9px] font-bold text-slate-700 mb-1">New status</label>
-                    <select
-                      required
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value)}
-                      className="border border-gov-border rounded-lg p-2 text-xs bg-white outline-none focus:border-gov-indigo"
-                    >
-                      <option value="">-- Choose --</option>
-                      {['Under Review', 'Assigned', 'Investigation In Progress', 'Additional Information Required', 'Closed'].map(st => (
-                        <option key={st} value={st}>{st}</option>
+                    <div className="space-y-2 mt-2">
+                      {selectedCase.answers.map((ans, idx) => (
+                        <div key={idx} className="flex flex-col">
+                          <label className="text-[10px] font-bold text-slate-600 mb-0.5">{ans.field_label}</label>
+                          <input
+                            type="text"
+                            value={editAnswers[ans.question_id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditAnswers(prev => ({
+                                ...prev,
+                                [ans.question_id]: val
+                              }));
+                            }}
+                            className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                              isHighlight(editAnswers[ans.question_id]) ? 'border-red-500 bg-red-50 text-red-900 font-bold' : 'border-gov-border bg-white text-slate-800'
+                            }`}
+                          />
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-[9px] font-bold text-slate-700 mb-1">Remarks / Comments</label>
-                    <textarea
-                      required
-                      rows={3}
-                      placeholder="Specify comments or status update reasons"
-                      value={statusRemarks}
-                      onChange={(e) => setStatusRemarks(e.target.value)}
-                      className="border border-gov-border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo"
-                    />
+
+                  {/* Suspect Details */}
+                  <div className="space-y-3 border-b border-slate-100 pb-4">
+                    <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px] text-amber-700">Suspect Information</h4>
+                    
+                    <div className="flex flex-col">
+                      <label className="text-[10px] font-bold text-slate-600 mb-1">Suspect Name</label>
+                      <input
+                        type="text"
+                        value={editSuspect.suspect_name}
+                        onChange={(e) => setEditSuspect({ ...editSuspect, suspect_name: e.target.value })}
+                        className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                          isHighlight(editSuspect.suspect_name) ? 'border-amber-500 bg-amber-50 text-amber-900 font-semibold' : 'border-gov-border bg-white text-slate-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-600 mb-1">Suspect Phone</label>
+                        <input
+                          type="text"
+                          value={editSuspect.suspect_mobile}
+                          onChange={(e) => setEditSuspect({ ...editSuspect, suspect_mobile: e.target.value })}
+                          className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                            isHighlight(editSuspect.suspect_mobile) ? 'border-amber-500 bg-amber-50 text-amber-900 font-semibold' : 'border-gov-border bg-white text-slate-800'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-600 mb-1">Suspect UPI ID</label>
+                        <input
+                          type="text"
+                          value={editSuspect.suspect_upi}
+                          onChange={(e) => setEditSuspect({ ...editSuspect, suspect_upi: e.target.value })}
+                          className={`border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo ${
+                            isHighlight(editSuspect.suspect_upi) ? 'border-amber-500 bg-amber-50 text-amber-900 font-semibold' : 'border-gov-border bg-white text-slate-800'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="text-[10px] font-bold text-slate-600 mb-1">Suspect Description</label>
+                      <textarea
+                        rows={3}
+                        value={editSuspect.details}
+                        onChange={(e) => setEditSuspect({ ...editSuspect, details: e.target.value })}
+                        className={`border rounded-lg p-2.5 text-xs outline-none focus:border-gov-indigo ${
+                          isHighlight(editSuspect.details) ? 'border-amber-500 bg-amber-50 text-amber-900 font-semibold' : 'border-gov-border bg-white text-slate-800'
+                        }`}
+                      />
+                    </div>
                   </div>
+
+                  {/* Submit button */}
                   <button
                     type="submit"
-                    disabled={updatingStatus || !newStatus}
-                    className="w-full bg-gov-indigo hover:bg-slate-900 text-white font-bold py-2 rounded text-[10px] transition-all shadow-sm"
+                    disabled={savingEdit}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md flex items-center justify-center space-x-1.5"
                   >
-                    {updatingStatus ? 'Updating status...' : 'Submit Status Update'}
+                    {savingEdit ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Submitting to NCRP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        <span>Confirm & Submit to NCRP</span>
+                      </>
+                    )}
                   </button>
                 </form>
+              ) : (
+                <>
+                  {/* Victim profile */}
+                  <div className="space-y-3 border-b border-slate-100 pb-4">
+                    <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Victim Information</h4>
+                    {selectedCase.is_anonymous ? (
+                      <p className="text-red-650 italic font-bold">Anonymous Filing (No profile details shared)</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-y-2">
+                        <div>
+                          <span className="text-gov-slate font-medium block">Name</span>
+                          <span className="font-bold text-slate-800">{selectedCase.victim_name || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gov-slate font-medium block">Mobile</span>
+                          <span className="font-bold text-slate-800">{selectedCase.victim_mobile || 'N/A'}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gov-slate font-medium block">Email</span>
+                          <span className="font-bold text-slate-800">{selectedCase.victim_email || 'N/A'}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gov-slate font-medium block">State & Address</span>
+                          <span className="font-bold text-slate-800">{selectedCase.victim_state || 'N/A'}, {selectedCase.victim_address || 'N/A'}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                <button
-                  onClick={() => handleDownloadReceipt(selectedCase.id, selectedCase.acknowledgement_number)}
-                  className="w-full border border-gov-border hover:bg-slate-100 font-bold py-2 rounded text-[10px] transition-colors flex items-center justify-center space-x-1"
-                >
-                  <Download className="h-3 w-3" />
-                  <span>Download receipt (PDF)</span>
-                </button>
-              </div>
+                  {/* Answers */}
+                  <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
+                    <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Answers & Description</h4>
+                    <p className="text-slate-750 font-medium italic bg-slate-50 p-2.5 rounded border border-slate-150">{selectedCase.fraud_description}</p>
+                    
+                    <div className="space-y-1 mt-3">
+                      {selectedCase.answers.map((ans, idx) => (
+                        <div key={idx} className="flex justify-between border-b border-slate-50 py-1">
+                          <span className="font-semibold text-slate-500">{ans.field_label}:</span>
+                          <span className="font-bold text-slate-800">{ans.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Suspect reports */}
+                  {selectedCase.suspect_reports.length > 0 && (
+                    <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
+                      <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px] text-red-650">Suspect Registry Entries</h4>
+                      {selectedCase.suspect_reports.map((s, idx) => (
+                        <div key={idx} className="bg-red-50/20 border border-red-200/50 p-3 rounded-lg space-y-1">
+                          {s.suspect_name && <p><span className="font-bold">Name:</span> {s.suspect_name}</p>}
+                          {s.suspect_mobile && <p><span className="font-bold">Phone:</span> {s.suspect_mobile}</p>}
+                          {s.suspect_upi && <p><span className="font-bold">UPI ID:</span> {s.suspect_upi}</p>}
+                          {s.suspect_email && <p><span className="font-bold">Email:</span> {s.suspect_email}</p>}
+                          {s.suspect_url && <p><span className="font-bold">URL:</span> {s.suspect_url}</p>}
+                          {s.details && <p className="italic text-gov-slate mt-1">Details: {s.details}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Evidences list */}
+                  {selectedCase.evidence_files.length > 0 && (
+                    <div className="space-y-2 border-b border-slate-100 pb-4 text-xs">
+                      <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Evidence attachments</h4>
+                      <ul className="space-y-1.5">
+                        {selectedCase.evidence_files.map((ev, idx) => (
+                          <li key={idx} className="text-[10px] text-gov-indigo hover:underline flex items-center space-x-1.5">
+                            <span>&bull;</span>
+                            <a href={`/uploads/${ev.file_path.split(/[\\/]/).pop()}`} target="_blank" rel="noreferrer" className="flex items-center space-x-1">
+                              <span>{ev.file_name}</span>
+                              <span className="text-[8px] text-gov-slate">({Math.round(ev.file_size / 1024)} KB)</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Update Status form */}
+                  <div className="space-y-3 bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs">
+                    <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px] flex items-center">
+                      <Edit className="h-3.5 w-3.5 mr-1 text-gov-indigo" />
+                      Action: Update Complaint Status
+                    </h4>
+
+                    <form onSubmit={handleUpdateStatus} className="space-y-3">
+                      <div className="flex flex-col">
+                        <label className="text-[9px] font-bold text-slate-700 mb-1">New status</label>
+                        <select
+                          required
+                          value={newStatus}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          className="border border-gov-border rounded-lg p-2 text-xs bg-white outline-none focus:border-gov-indigo"
+                        >
+                          <option value="">-- Choose --</option>
+                          {['Under Review', 'Assigned', 'Investigation In Progress', 'Additional Information Required', 'Closed'].map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[9px] font-bold text-slate-700 mb-1">Remarks / Comments</label>
+                        <textarea
+                          required
+                          rows={3}
+                          placeholder="Specify comments or status update reasons"
+                          value={statusRemarks}
+                          onChange={(e) => setStatusRemarks(e.target.value)}
+                          className="border border-gov-border rounded-lg p-2 text-xs outline-none focus:border-gov-indigo"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={updatingStatus || !newStatus}
+                        className="w-full bg-gov-indigo hover:bg-slate-900 text-white font-bold py-2 rounded text-[10px] transition-all shadow-sm"
+                      >
+                        {updatingStatus ? 'Updating status...' : 'Submit Status Update'}
+                      </button>
+                    </form>
+
+                    <button
+                      onClick={() => handleDownloadReceipt(selectedCase.id, selectedCase.acknowledgement_number)}
+                      className="w-full border border-gov-border hover:bg-slate-100 font-bold py-2 rounded text-[10px] transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <Download className="h-3 w-3" />
+                      <span>Download receipt (PDF)</span>
+                    </button>
+                  </div>
+                </>
+              )}
 
             </div>
           )}

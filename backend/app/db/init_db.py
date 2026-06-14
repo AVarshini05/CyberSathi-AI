@@ -6,8 +6,8 @@ from app.core.security import get_password_hash
 
 
 def init_db(db: Session) -> None:
-    # 1. Create Default Admin/Officer if not exist
-    admin_user = db.query(User).filter(User.email == "admin@cybersathi.gov.in").first()
+    # 1. Create Default Admin/Officer if not exist (checking by mobile number to avoid duplicates)
+    admin_user = db.query(User).filter(User.mobile_number == "9999999999").first()
     if not admin_user:
         admin_user = User(
             email="admin@cybersathi.gov.in",
@@ -19,8 +19,13 @@ def init_db(db: Session) -> None:
             is_superuser=True
         )
         db.add(admin_user)
+    else:
+        # Migrate email domain from ccrms.gov.in to cybersathi.gov.in if needed
+        if admin_user.email and admin_user.email.endswith("ccrms.gov.in"):
+            admin_user.email = admin_user.email.replace("ccrms.gov.in", "cybersathi.gov.in")
+            db.add(admin_user)
 
-    officer_user = db.query(User).filter(User.email == "officer@cybersathi.gov.in").first()
+    officer_user = db.query(User).filter(User.mobile_number == "8888888888").first()
     if not officer_user:
         officer_user = User(
             email="officer@cybersathi.gov.in",
@@ -32,6 +37,11 @@ def init_db(db: Session) -> None:
             is_superuser=False
         )
         db.add(officer_user)
+    else:
+        # Migrate email domain from ccrms.gov.in to cybersathi.gov.in if needed
+        if officer_user.email and officer_user.email.endswith("ccrms.gov.in"):
+            officer_user.email = officer_user.email.replace("ccrms.gov.in", "cybersathi.gov.in")
+            db.add(officer_user)
 
     # 2. Seed Categories
     categories_data = [
@@ -114,6 +124,16 @@ def init_db(db: Session) -> None:
             "description": "Social media hacking, identity theft, cyberstalking, online harassment, defacement, ransomware, etc.",
             "subcategories": [
                 {
+                    "name": "Phishing",
+                    "description": "Credential theft or sensitive information theft through fraudulent emails, links, or replica websites.",
+                    "questions": [
+                        {"field_name": "phishing_url", "field_label": "Phishing Link / Website", "field_type": "text", "is_required": True},
+                        {"field_name": "spoofed_brand", "field_label": "Brand/Organization Impersonated", "field_type": "text", "is_required": False},
+                        {"field_name": "medium", "field_label": "Medium used (Email/SMS/WhatsApp)", "field_type": "select", "field_options": "Email,SMS,WhatsApp,Other", "is_required": True},
+                        {"field_name": "stolen_info", "field_label": "Information Stolen", "field_type": "select", "field_options": "Credentials,Financial Info,Personal Details,Other", "is_required": True}
+                    ]
+                },
+                {
                     "name": "Social Media Hacking",
                     "description": "Unauthorized access to profile and locking out user.",
                     "questions": [
@@ -148,6 +168,8 @@ def init_db(db: Session) -> None:
                     "questions": [
                         {"field_name": "ransomware_name", "field_label": "Ransomware Name (e.g. .lock, .wannacry)", "field_type": "text", "is_required": False},
                         {"field_name": "amount_demanded", "field_label": "Ransom Amount Demanded", "field_type": "number", "is_required": False},
+                        {"field_name": "crypto_type", "field_label": "Crypto Coin Type", "field_type": "select", "field_options": "BTC,ETH,USDT,BNB,Other", "is_required": False},
+                        {"field_name": "fraud_wallet", "field_label": "Fraudulent/Receiver Wallet Address", "field_type": "text", "is_required": False},
                         {"field_name": "os_affected", "field_label": "Operating System Affected", "field_type": "select", "field_options": "Windows,macOS,Linux,Android,iOS,Other", "is_required": True}
                     ]
                 }

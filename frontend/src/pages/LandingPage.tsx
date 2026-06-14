@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, ShieldAlert, FileText, Search, PhoneCall, TrendingUp, HelpCircle } from 'lucide-react';
+import { Shield, ShieldAlert, FileText, Search, PhoneCall, TrendingUp, HelpCircle, Sparkles } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 
 export const LandingPage: React.FC = () => {
@@ -22,13 +22,20 @@ export const LandingPage: React.FC = () => {
             Report UPI fraud, credit/debit card scams, cyber harassment, hacking, identity theft, or women/children related offenses. Take action securely.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+          <div className="flex flex-col lg:flex-row justify-center gap-4 pt-4">
             <Link
               to="/file-complaint"
               className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-8 py-3.5 rounded-lg shadow-lg hover:shadow-orange-600/10 transition-all text-sm flex items-center justify-center space-x-2"
             >
               <ShieldAlert className="h-5 w-5" />
               <span>Report Cyber Crime</span>
+            </Link>
+            <Link
+              to="/file-complaint?ai=true"
+              className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-8 py-3.5 rounded-lg shadow-lg hover:shadow-sky-600/10 transition-all text-sm flex items-center justify-center space-x-2"
+            >
+              <Sparkles className="h-5 w-5" />
+              <span>Report with AI Assist</span>
             </Link>
             <Link
               to="/track"

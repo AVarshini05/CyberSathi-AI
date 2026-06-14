@@ -40,9 +40,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchProfile();
   }, []);
 
-  const login = async (mobile: string, pass: string) => {
+  const login = async (mobileOrEmail: string, pass: string) => {
     const response = await api.post('/auth/login', {
-      mobile_number: mobile,
+      login_identifier: mobileOrEmail,
       password: pass,
     });
     localStorage.setItem('ccrms_token', response.data.access_token);

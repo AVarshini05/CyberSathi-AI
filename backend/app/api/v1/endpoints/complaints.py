@@ -215,3 +215,94 @@ def update_complaint_status(
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     return complaint
+
+
+from pydantic import BaseModel
+import datetime
+from app.models.complaint import Complaint, ComplaintAnswer, ComplaintStatus
+from app.models.suspect import SuspectReport
+from app.schemas.complaint import ComplaintAnswerCreate, SuspectReportCreate
+
+class ComplaintReviewUpdate(BaseModel):
+    victim_name: Optional[str] = None
+    victim_mobile: Optional[str] = None
+    victim_email: Optional[str] = None
+    victim_address: Optional[str] = None
+    victim_state: Optional[str] = None
+    fraud_description: Optional[str] = None
+    answers: List[ComplaintAnswerCreate] = []
+    suspect_details: List[SuspectReportCreate] = []
+
+@router.put("/{complaint_id}/review-update", response_model=ComplaintResponse)
+def review_update_complaint(
+    complaint_id: int,
+    obj_in: ComplaintReviewUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_officer_or_admin),
+) -> Any:
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+        
+    # Update victim fields
+    if obj_in.victim_name is not None:
+        complaint.victim_name = obj_in.victim_name
+    if obj_in.victim_mobile is not None:
+        complaint.victim_mobile = obj_in.victim_mobile
+    if obj_in.victim_email is not None:
+        complaint.victim_email = obj_in.victim_email
+    if obj_in.victim_address is not None:
+        complaint.victim_address = obj_in.victim_address
+    if obj_in.victim_state is not None:
+        complaint.victim_state = obj_in.victim_state
+    if obj_in.fraud_description is not None:
+        complaint.fraud_description = obj_in.fraud_description
+        
+    # Update dynamic answers
+    for ans in obj_in.answers:
+        db_answer = db.query(ComplaintAnswer).filter(
+            ComplaintAnswer.complaint_id == complaint_id,
+            ComplaintAnswer.question_id == ans.question_id
+        ).first()
+        if db_answer:
+            db_answer.value = ans.value
+        else:
+            db_answer = ComplaintAnswer(
+                complaint_id=complaint_id,
+                question_id=ans.question_id,
+                value=ans.value
+            )
+            db.add(db_answer)
+            
+    # Update suspect details
+    db.query(SuspectReport).filter(SuspectReport.complaint_id == complaint_id).delete()
+    for suspect in obj_in.suspect_details:
+        db_suspect = SuspectReport(
+            complaint_id=complaint_id,
+            suspect_name=suspect.suspect_name,
+            suspect_mobile=suspect.suspect_mobile,
+            suspect_email=suspect.suspect_email,
+            suspect_url=suspect.suspect_url,
+            suspect_upi=suspect.suspect_upi,
+            suspect_social_handle=suspect.suspect_social_handle,
+            details=suspect.details
+        )
+        db.add(db_suspect)
+        
+    # Finalize status to Submitted
+    complaint.current_status = "Submitted"
+    complaint.updated_at = datetime.datetime.utcnow()
+    
+    # Add history entry
+    db_status = ComplaintStatus(
+        complaint_id=complaint_id,
+        status="Submitted",
+        remarks="Complaint reviewed, corrected, and officially submitted to NCRP.",
+        updated_by=current_user.id
+    )
+    db.add(db_status)
+    
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+

@@ -20,6 +20,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.db.base import Base
+from app.core.config import settings
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -29,9 +30,8 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    # Dynamically pull the database URL from environment variables
-    # fallback to config if not set
-    return os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    # Dynamically pull the database URL from Pydantic settings
+    return settings.DATABASE_URL
 
 
 def run_migrations_offline() -> None:

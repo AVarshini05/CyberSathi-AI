@@ -21,6 +21,20 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+const getErrorMessage = (err: any, fallback: string): string => {
+  const detail = err.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    const first = detail[0];
+    if (first && first.msg) {
+      const field = first.loc && first.loc.length > 1 ? first.loc[1] : '';
+      return field ? `${field}: ${first.msg}` : first.msg;
+    }
+  }
+  return fallback;
+};
+
 export const RegisterPage: React.FC = () => {
   const { register: authRegister } = useAuth();
   const navigate = useNavigate();
@@ -65,7 +79,7 @@ export const RegisterPage: React.FC = () => {
       });
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.detail || 'An error occurred during registration.');
+      setError(getErrorMessage(err, 'An error occurred during registration.'));
     } finally {
       setLoading(false);
     }

@@ -21,18 +21,18 @@ def test_login_citizen(client):
     client.post(
         "/api/v1/auth/register",
         json={
-            "email": "loginuser@ccrms.gov.in",
+            "email": "loginuser@cybersathi.gov.in",
             "mobile_number": "9876543211",
             "full_name": "Login Citizen",
             "password": "loginpassword"
         }
     )
     
-    # Login
+    # Login by mobile number
     response = client.post(
         "/api/v1/auth/login",
         json={
-            "mobile_number": "9876543211",
+            "login_identifier": "9876543211",
             "password": "loginpassword"
         }
     )
@@ -42,12 +42,59 @@ def test_login_citizen(client):
     assert data["token_type"] == "bearer"
 
 
+def test_login_citizen_by_email(client):
+    # Register first
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "emailuser@cybersathi.gov.in",
+            "mobile_number": "9876543288",
+            "full_name": "Email Login Citizen",
+            "password": "loginpassword"
+        }
+    )
+    
+    # Login by email (lowercase)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "login_identifier": "emailuser@cybersathi.gov.in",
+            "password": "loginpassword"
+        }
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+    # Login by email (case-insensitive check)
+    response_case = client.post(
+        "/api/v1/auth/login",
+        json={
+            "login_identifier": "EMAILUSER@CYBERSATHI.GOV.IN",
+            "password": "loginpassword"
+        }
+    )
+    assert response_case.status_code == 200
+    assert "access_token" in response_case.json()
+
+
+def test_login_failure(client):
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "login_identifier": "nonexistent@cybersathi.gov.in",
+            "password": "wrongpassword"
+        }
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid email/mobile number or password"
+
+
 def test_otp_simulation(client):
     # Register first
     client.post(
         "/api/v1/auth/register",
         json={
-            "email": "otpuser@ccrms.gov.in",
+            "email": "otpuser@cybersathi.gov.in",
             "mobile_number": "9876543212",
             "full_name": "OTP Citizen",
             "password": "otppassword"

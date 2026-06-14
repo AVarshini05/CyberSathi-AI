@@ -36,7 +36,7 @@ class UserResponse(UserBase):
 
 
 class UserLogin(BaseModel):
-    mobile_number: str = Field(..., pattern=r"^\+?[0-9]{10,15}$")
+    login_identifier: str
     password: str
 
 

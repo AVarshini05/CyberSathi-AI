@@ -46,7 +46,7 @@ def test_manual_complaint_flow(client: TestClient, db: Session):
     login_res = client.post(
         "/api/v1/auth/login",
         json={
-            "mobile_number": "7777777777",
+            "login_identifier": "7777777777",
             "password": "citizenpassword"
         }
     )

@@ -33,6 +33,8 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
 
+    GEMINI_API_KEY: str = ""
+
     # Database setup (local PostgreSQL)
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ccrms"
 

@@ -60,3 +60,11 @@ uploads/
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Logs and Temporary Scratch files
+logs/
+backend/logs/
+*.log
+scratch/
+backend/scratch/
+

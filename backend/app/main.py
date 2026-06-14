@@ -11,6 +11,7 @@ from app.api.v1.api import api_router
 from app.db.session import engine, SessionLocal
 from app.db.base import Base
 from app.db.init_db import init_db
+from app.services.classification_service import load_and_cache_schemas
 
 
 def validate_postgres_connection() -> bool:
@@ -45,8 +46,10 @@ async def lifespan(app: FastAPI):
     try:
         init_db(db)
         print("[STARTUP] Database seeded with NCRP categories and default accounts.")
+        load_and_cache_schemas(db)
+        print("[STARTUP] Complaint categories and subcategories cached in-memory.")
     except Exception as e:
-        print(f"[STARTUP] Warning: Seeding error (may already be seeded): {e}")
+        print(f"[STARTUP] Warning: Seeding/Caching error: {e}")
     finally:
         db.close()
 

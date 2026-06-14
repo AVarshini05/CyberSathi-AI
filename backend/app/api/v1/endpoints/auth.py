@@ -45,19 +45,19 @@ def login_access_token(
     db: Session = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
-    # OAuth2 standard Form uses username, which we map to mobile number
+    # OAuth2 standard Form uses username, which we map to login_identifier
     user = crud_user.authenticate(
-        db, mobile_number=form_data.username, password=form_data.password
+        db, login_identifier=form_data.username, password=form_data.password
     )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect mobile number or password",
+            detail="Invalid email/mobile number or password",
         )
     elif not crud_user.is_active(user):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user account",
+            detail="Invalid email/mobile number or password",
         )
     access_token_expires = timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -77,17 +77,17 @@ def login(
     login_in: UserLogin,
 ) -> Any:
     user = crud_user.authenticate(
-        db, mobile_number=login_in.mobile_number, password=login_in.password
+        db, login_identifier=login_in.login_identifier, password=login_in.password
     )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect mobile number or password",
+            detail="Invalid email/mobile number or password",
         )
     elif not crud_user.is_active(user):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user account",
+            detail="Invalid email/mobile number or password",
         )
     access_token_expires = timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES

@@ -117,7 +117,7 @@ class ComplaintCreate(BaseModel):
     is_anonymous: bool = False
     victim_name: Optional[str] = None
     victim_mobile: Optional[str] = None
-    victim_email: Optional[EmailStr] = None
+    victim_email: Optional[str] = None
     victim_gender: Optional[str] = None
     victim_address: Optional[str] = None
     victim_state: Optional[str] = None
